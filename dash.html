@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Detailed Corona Dashboard</title>
+  <meta charset="utf-8" />
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+  <script src="https://unpkg.com/papaparse@5.1.1/papaparse.min.js"></script>
+</head>
+
+<body>
+  <div id="charts" style="width:65%;">
+</body>
+<script>
+  var URL_PREFIX = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series';
+  var URLS = {
+    'deaths': 'time_series_19-covid-Deaths.csv',
+    'confirmed': 'time_series_19-covid-Confirmed.csv',
+    'recovered': 'time_series_19-covid-Recovered.csv',
+  }
+  var COUNTRIES = new Map([
+    // Name, population 2019, density (pop/km2)
+    ["Mainland China", 1433783.686, 147.7068],
+    ["India", 1366417.754, 415.629],
+    ["US", 329064.917, 35.1092],
+    ["Indonesia", 270625.568, 142.0928],
+    ["Pakistan", 216565.318, 245.5634],
+    ["Brazil", 211049.527, 24.7834],
+    ["Nigeria", 200963.599, 217.5477],
+    ["Bangladesh", 163046.161, 1104.8734],
+    ["Russia", 145872.256, 8.5314],
+    ["Mexico", 127575.529, 64.9446],
+    ["Japan", 126860.301, 335.6714],
+    ["Ethiopia", 112078.73, 101.493],
+    ["Philippines", 108116.615, 315.8045],
+    ["Egypt", 100388.073, 100.1427],
+    ["Vietnam", 96462.106, 291.2398],
+    ["DR Congo", 86790.567, 37.0131],
+    ["Germany", 83517.045, 233.8666],
+    ["Turkey", 83429.615, 106.4748],
+    ["Iran", 82913.906, 50.3059],
+    ["Thailand", 69625.582, 135.6906],
+    ["UK", 67530.172, 278.0164],
+    ["France", 65129.728, 118.0539],
+    ["Italy", 60550.075, 200.9387],
+    ["South Africa", 58558.27, 47.9578],
+    ["Tanzania", 58005.463, 61.3758],
+    ["Myanmar", 54045.42, 79.8805],
+    ["Kenya", 52573.973, 90.5875],
+    ["South Korea", 51225.308, 511.1796],
+    ["Colombia", 50339.443, 44.0898],
+    ["Spain", 46736.776, 92.3666],
+    ["Argentina", 44780.677, 16.1058],
+    ["Uganda", 44269.594, 183.273],
+    ["Ukraine", 43993.638, 72.8975],
+    ["Algeria", 43053.054, 18.0763],
+    ["Sudan", 42813.238, 22.6997],
+    ["Iraq", 39309.783, 89.6835],
+    ["Afghanistan", 38041.754, 58.3257],
+    ["Poland", 37887.768, 121.1715],
+    ["Canada", 37411.047, 3.7468],
+    ["Morocco", 36471.769, 81.6745],
+    ["Saudi Arabia", 34268.528, 15.9411],
+    ["Uzbekistan", 32981.716, 73.7186],
+    ["Peru", 32510.453, 25.2957],
+    ["Malaysia", 31949.777, 96.5825],
+    ["Angola", 31825.295, 25.5276],
+    ["Ghana", 30417.856, 127.5205],
+    ["Mozambique", 30366.036, 37.8823],
+    ["Yemen", 29161.922, 55.2343],
+    ["Nepal", 28608.71, 194.3777],
+    ["Venezuela", 28515.829, 31.1157],
+    ["Madagascar", 26969.307, 45.9411],
+    ["Cameroon", 25876.38, 54.4259],
+    ["Ivory Coast", 25716.544, 79.7504],
+    ["North Korea", 25666.161, 212.93],
+    ["Australia", 25203.198, 3.2765],
+    ["Taiwan", 23773.876, 656.8639],
+    ["Niger", 23310.715, 18.3984],
+    ["Sri Lanka", 21323.733, 325.0074],
+    ["Burkina Faso", 20321.378, 74.4463],
+    ["Mali", 19658.031, 15.8508],
+    ["Romania", 19364.557, 81.2302],
+    ["Chile", 18952.038, 25.0655],
+    ["Malawi", 18628.747, 157.2258],
+    ["Kazakhstan", 18551.427, 6.8081],
+    ["Zambia", 17861.03, 23.7321],
+    ["Guatemala", 17581.472, 161.4623],
+    ["Ecuador", 17373.662, 62.7568],
+    ["Netherlands", 17097.13, 408.5336],
+    ["Syria", 17070.135, 92.1813],
+    ["Cambodia", 16486.542, 91.0683],
+    ["Senegal", 16296.364, 82.8396],
+    ["Chad", 15946.876, 12.4197],
+    ["Somalia", 15442.905, 24.2182],
+    ["Zimbabwe", 14645.468, 37.4797],
+    ["Guinea", 12771.246, 51.9458],
+    ["Rwanda", 12626.95, 479.4195],
+    ["Benin", 11801.151, 104.7855],
+    ["Tunisia", 11694.719, 71.4792],
+    ["Belgium", 11539.328, 377.9916],
+    ["Burundi", 11530.58, 414.2624],
+    ["Bolivia", 11513.1, 10.48],
+    ["Cuba", 11333.483, 103.1404],
+    ["Haiti", 11263.077, 405.8766],
+    ["South Sudan", 11062.113, 17.8495],
+    ["Dominican Republic", 10738.958, 220.6439],
+    ["Czech Republic", 10689.209, 135.5381],
+    ["Greece", 10473.455, 79.3504],
+    ["Portugal", 10226.187, 111.0456],
+    ["Jordan", 10101.694, 113.0677],
+    ["Azerbaijan", 10047.718, 116.0245],
+    ["Sweden", 10036.379, 22.2885],
+    ["United Arab Emirates", 9770.529, 116.8724],
+    ["Honduras", 9746.117, 86.6383],
+    ["Hungary", 9684.679, 104.105],
+    ["Belarus", 9452.411, 45.5318],
+    ["Tajikistan", 9321.018, 65.1364],
+    ["Austria", 8955.102, 106.7723],
+    ["Papua New Guinea", 8776.109, 18.9614],
+    ["Serbia", 8772.235, 99.2772],
+    ["Switzerland", 8591.365, 208.104],
+    ["Israel", 8519.377, 410.177],
+    ["Togo", 8082.366, 142.3328],
+    ["Sierra Leone", 7813.215, 108.9102],
+    ["Hong Kong", 7436.154, 6735.6467],
+    ["Laos", 7169.455, 30.2764],
+    ["Paraguay", 7044.636, 17.3192],
+    ["Bulgaria", 7000.119, 63.133],
+    ["Lebanon", 6855.713, 655.9236],
+    ["Libya", 6777.452, 3.8518],
+    ["Nicaragua", 6545.502, 50.206],
+    ["El Salvador", 6453.553, 306.7132],
+    ["Kyrgyzstan", 6415.85, 32.0871],
+    ["Turkmenistan", 5942.089, 12.1739],
+    ["Singapore", 5804.337, 8175.1225],
+    ["Denmark", 5771.876, 133.9369],
+    ["Finland", 5532.156, 16.3468],
+    ["Slovakia", 5457.013, 111.2836],
+    ["Republic of the Congo", 5380.508, 15.7325],
+    ["Norway", 5378.857, 16.6116],
+    ["Costa Rica", 5047.561, 98.7781],
+    ["Palestine", 4981.42, 800.8714],
+    ["Oman", 4974.986, 16.0743],
+    ["Liberia", 4937.374, 44.3335],
+    ["Ireland", 4882.495, 69.479],
+    ["New Zealand", 4783.063, 17.6845],
+    ["Central African Republic", 4745.185, 7.6169],
+    ["Mauritania", 4525.696, 4.3909],
+    ["Panama", 4246.439, 56.3061],
+    ["Kuwait", 4207.083, 236.1142],
+    ["Croatia", 4130.304, 72.9813],
+    ["Moldova", 4043.263, 119.4606],
+    ["Georgia", 3996.765, 57.3424],
+    ["Eritrea", 3497.117, 29.7374],
+    ["Uruguay", 3461.734, 19.122],
+    ["Bosnia and Herzegovina", 3301, 64.4613],
+    ["Mongolia", 3225.167, 2.062],
+    ["Armenia", 2957.731, 99.4429],
+    ["Jamaica", 2948.279, 268.2448],
+    ["Puerto Rico", 2933.408, 330.7112],
+    ["Albania", 2880.917, 100.2128],
+    ["Qatar", 2832.067, 244.4387],
+    ["Lithuania", 2759.627, 42.2608],
+    ["Namibia", 2494.53, 3.0214],
+    ["Gambia", 2347.706, 219.6376],
+    ["Botswana", 2303.697, 3.9582],
+    ["Gabon", 2172.579, 8.1167],
+    ["Lesotho", 2125.268, 70.0138],
+    ["North Macedonia", 2083.459, 81.0275], // Is this the right country?
+    ["Slovenia", 2078.654, 102.5331],
+    ["Guinea-Bissau", 1920.922, 53.1743],
+    ["Latvia", 1906.743, 29.5349],
+    ["Bahrain", 1641.172, 2145.3229],
+    ["Trinidad and Tobago", 1394.973, 271.9246],
+    ["Equatorial Guinea", 1355.986, 48.34],
+    ["Estonia", 1325.648, 29.311],
+    ["Timor-Leste", 1293.119, 86.9382],
+    ["Mauritius", 1269.668, 622.3863],
+    ["Cyprus", 1198.575, 129.5617],
+    ["Swaziland", 1148.13, 66.1213],
+    ["Djibouti", 973.56, 41.9638],
+    ["Fiji", 889.953, 48.7058],
+    ["Reunion", 888.927, 354.0131],
+    ["Comoros", 850.886, 456.9742],
+    ["Guyana", 782.766, 3.6413],
+    ["Bhutan", 763.092, 19.8753],
+    ["Solomon Islands", 669.823, 23.1805],
+    ["Macau", 640.445, 21348.1667],
+    ["Montenegro", 627.987, 45.4668],
+    ["Luxembourg", 615.729, 238.1009],
+    ["Western Sahara", 582.463, 2.1897],
+    ["Suriname", 581.372, 3.5488],
+    ["Cape Verde", 549.935, 136.3588],
+    ["Maldives", 530.953, 1769.8433],
+    ["Malta", 440.372, 1393.5823],
+    ["Brunei", 433.285, 75.1578],
+    ["Guadeloupe", 400.056, 245.7346],
+    ["Belize", 390.353, 16.997],
+    ["Bahamas", 389.482, 27.9339],
+    ["Martinique", 375.554, 332.9379],
+    ["Iceland", 339.031, 3.2916],
+    ["Vanuatu", 299.882, 24.6027],
+    ["French Guiana", 290.832, 3.4816],
+    ["Barbados", 287.025, 667.5],
+    ["New Caledonia", 282.75, 15.2221],
+    ["French Polynesia", 279.287, 67.0235],
+    ["Mayotte", 266.15, 711.631],
+    ["Sao Tome and Principe", 215.056, 223.0871],
+    ["Samoa", 197.097, 69.3515],
+    ["Saint Lucia", 182.79, 296.737],
+    ["Guam", 167.294, 304.725],
+    ["Curacao", 163.424, 368.0721],
+    ["Kiribati", 117.606, 145.0136],
+    ["Micronesia", 113.815, 162.1296],
+    ["Grenada", 112.003, 325.5901],
+    ["Saint Vincent and the Grenadines", 110.589, 284.2905],
+    ["Aruba", 106.314, 590.6333],
+    ["United States Virgin Islands", 104.578, 301.3775],
+    ["Tonga", 104.494, 139.8849],
+    ["Seychelles", 97.739, 216.2367],
+    ["Antigua and Barbuda", 97.118, 219.724],
+    ["Isle of Man", 84.584, 147.8741],
+    ["Andorra", 77.142, 164.8333],
+    ["Dominica", 71.808, 95.6165],
+    ["Cayman Islands", 64.948, 246.0152],
+    ["Bermuda", 62.506, 1157.5185],
+    ["Marshall Islands", 58.791, 324.8122],
+    ["Northern Mariana Islands", 57.216, 123.3103],
+    ["Greenland", 56.672, 0.0262],
+    ["American Samoa", 55.312, 277.9497],
+    ["Saint Kitts and Nevis", 52.823, 202.387],
+    ["Faroe Islands", 48.678, 34.9447],
+    ["Sint Maarten", 42.388, 1246.7059],
+    ["Monaco", 38.964, 19289.1089],
+    ["Turks and Caicos Islands", 38.191, 40.2859],
+    ["Liechtenstein", 38.019, 237.6188],
+    ["Saint Martin", 38.002, 717.0189],
+    ["San Marino", 33.86, 555.082],
+    ["Gibraltar", 33.701, 5616.8333],
+    ["British Virgin Islands", 30.03, 198.8742],
+    ["Palau", 18.008, 39.2331],
+    ["Cook Islands", 17.548, 74.3559],
+    ["Anguilla", 14.869, 163.3956],
+    ["Tuvalu", 11.646, 447.9231],
+    ["Wallis and Futuna", 11.432, 80.507],
+    ["Nauru", 10.756, 512.1905],
+    ["Saint Barthélemy", 9.847, 468.9048],
+    ["Saint Pierre and Miquelon", 5.822, 24.0579],
+    ["Montserrat", 4.989, 48.9118],
+    ["Falkland Islands", 3.377, 0.2774],
+    ["Niue", 1.615, 6.2115],
+    ["Tokelau", 1.34, 111.6667],
+    ["Vatican City", 0.799, 1815.9091]
+  ].map(v => [v[0], v.slice(1)]));
+
+  class ChartData {
+    constructor(header, data, label) {
+      this.label = label;
+      this.header = header;
+      // Province/State,Country/Region,Lat,Long,
+      this.data = data.map(row => row.slice(0, 4).concat(row.slice(4).map(n => parseInt(n))));
+
+      this.countries = new Set();
+      this.data.map(row => this.countries.add(row[1]));
+    }
+    get labels() {
+      return this.header.slice(4);
+    }
+    filter(country = null) {
+      if (country) {
+        // Sum up all the values for that country
+        return this.data
+          .filter(function (row) {
+            return row[1] == country;
+          })
+          .map(row => row.slice(4))
+          .reduce(function (acc, curr) {
+            for (var i = 0; i < acc.length; i++) {
+              acc[i] += curr[i];
+            }
+            return acc;
+          })
+      }
+    }
+  }
+
+  // Returns a promise with a ChartData.
+  function fetchData(url, label) {
+    return fetch(url)
+      .then(function (response) {
+        return response.ok ? response.text() : Promise.reject(response.status);
+      })
+      .then(function (text) {
+        let data = Papa.parse(text);
+        return data.errors.length ? Promise.reject(data.errors) : data.data;
+      })
+      .then(function (data) {
+        let header = data.splice(0, 1)[0];
+        return new ChartData(header, data, label);
+      });
+  };
+
+  function draw(canvas, chartData, country) {
+    var ctx = canvas.getContext("2d");
+
+    var casesPerMillion = COUNTRIES.has(country) ?
+      chartData.get('confirmed').filter(country).reduce((a, b) => Math.max(a, b)) / (COUNTRIES.get(country)[0] / 1000) : -1.0;
+
+    var chart = new Chart(ctx, {
+      // The type of chart we want to create
+      type: "line",
+
+      // The data for our dataset
+      data: {
+        labels: chartData.get('confirmed').labels,
+        datasets: [
+          {
+            label: 'Confirmed',
+            backgroundColor: 'rgb(255, 159, 64)',
+            borderColor: 'rgb(255, 159, 64)',
+            data: chartData.get('confirmed').filter(country),
+            fill: false,
+          },
+          {
+            label: 'Deaths',
+            backgroundColor: 'rgb(255, 99, 132)',
+            borderColor: 'rgb(255, 99, 132)',
+            data: chartData.get('deaths').filter(country),
+            fill: false,
+          },
+          {
+            label: 'Recovered',
+            backgroundColor: 'rgb(75, 192, 192)',
+            borderColor: 'rgb(75, 192, 192)',
+            data: chartData.get('recovered').filter(country),
+            fill: false,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          xAxes: [{
+            display: true,
+            scaleLabel: {
+              display: true,
+              labelString: 'Date MM/DD/YY'
+            }
+          }],
+          yAxes: [{
+            type: 'linear', // only linear but allow scale type registration. This allows extensions to exist solely for log scale for instance
+            display: true,
+            position: 'left',
+            id: 'y-axis-1',
+
+            scaleLabel: {
+              display: true,
+              labelString: '# Cases'
+            }
+          }, {
+            type: 'linear', // only linear but allow scale type registration. This allows extensions to exist solely for log scale for instance
+            display: casesPerMillion >= 0.0,
+            position: 'right',
+            id: 'y-axis-2',
+            ticks: {
+              beginAtZero: true,
+              suggestedMax: casesPerMillion,
+            },
+            scaleLabel: {
+              display: true,
+              labelString: 'Cases per million inhabitants'
+            },
+
+            // grid line settings
+            gridLines: {
+              drawOnChartArea: false, // only want the grid lines for one axis to show up
+            },
+          }]
+        }
+      }
+    });
+  }
+
+  function drawGraph(initialCountry) {
+    var canvas = document.createElement('canvas');
+
+    var select = document.createElement('select');
+    document.body.appendChild(select);
+    select.onchange = function () {
+      draw(canvas, window.data, this.options[this.selectedIndex].value)
+    };
+
+    document.getElementById('charts').appendChild(select);
+    document.getElementById('charts').appendChild(canvas);
+
+    window.data.values().next().value.countries.forEach(country => {
+      var el = document.createElement("option");
+      el.textContent = country;
+      el.value = country;
+      if (initialCountry == country) {
+        el.selected = true;
+      }
+      select.appendChild(el);
+    });
+    select.onchange(); // Fire an event to force draw().
+  }
+
+  Promise.all(Object.keys(URLS).map(function (label, index) { return fetchData(URL_PREFIX + '/' + URLS[label], label) }))
+    .then(function (values) {
+      window.data = new Map(values.map(v => [v.label, v]));
+      drawGraph('Switzerland');
+      drawGraph('Mainland China');
+
+      // This is just for debugging. To keep the list of countries in sync. The one from the CSV files
+      // and the one above that contains the total population per country.
+      window.data.forEach(function (data) {
+        data.countries.forEach(function (country) {
+          if (!COUNTRIES.has(country)) {
+            console.info('Invalid country:', country);
+          }
+        });
+      });
+    });
+</script>
+
+</html>
