@@ -396,7 +396,7 @@
     document.getElementById('charts').appendChild(select);
     document.getElementById('charts').appendChild(canvas);
 
-    window.data.values().next().value.countries.forEach(country => {
+    Array.from(window.data.values().next().value.countries).sort().map(country => {
       var el = document.createElement("option");
       el.textContent = country;
       el.value = country;
