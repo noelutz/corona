@@ -7,6 +7,18 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
   <script src="https://unpkg.com/papaparse@5.1.1/papaparse.min.js"></script>
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-159935352-1"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'UA-159935352-1');
+  </script>
+
+
 </head>
 
 <body>
@@ -304,6 +316,8 @@
   };
 
   function draw(canvas, chartData, country) {
+    gtag('event', 'graph', { 'event_category': 'draw', 'event_label': 'country', 'value': country });
+
     var ctx = canvas.getContext("2d");
 
     var casesPerMillion = COUNTRIES.has(country) ?
