@@ -4,11 +4,12 @@
 <head>
   <title>Per Country COVID-19 Infection Timeline</title>
   <meta charset="utf-8" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
   <script src="https://unpkg.com/papaparse@5.1.1/papaparse.min.js"></script>
-
-
+  <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
   <script async src="https://www.googletagmanager.com/gtag/js?id=UA-159935352-1"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -17,13 +18,50 @@
 
     gtag('config', 'UA-159935352-1');
   </script>
-
-
+  <style>
+    .mdl-switch.is-checked .mdl-switch__thumb {
+      background: rgb(255,64,129);
+    }
+    .mdl-switch.is-checked .mdl-switch__track {
+      background: #fbe2f0;
+    }
+  </style>
+  </style>
 </head>
 
 <body>
-  <p><a href="https://noelutz.github.io/corona/">README</a></p>
-  <div id="charts" style="width:50%;">
+  <div class="mdl-layout mdl-js-layout">
+    <header class="mdl-layout__header">
+      <div class="mdl-layout__header-row">
+        <!-- Title -->
+        <span class="mdl-layout-title">Per Country COVID-19 Infection Timeseries</span>
+        <!-- Add spacer, to align navigation to the right -->
+        <div class="mdl-layout-spacer"></div>
+        <!-- Navigation -->
+        <nav class="mdl-navigation">
+          <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="logscale">
+            <input type="checkbox" id="logscale" class="mdl-switch__input">
+            <span class="mdl-switch__label">Log Scale</span>
+          </label>
+          <a class="mdl-navigation__link" href=""></a>
+          <button class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-button--colored"
+            onclick="window.location.href = 'https://noelutz.github.io/corona/'">
+            <i class="material-icons">help</i>
+          </button> 
+        </nav>
+      </div>
+    </header>
+    <main class="mdl-layout__content">
+      <div class="mdl-grid">
+        <div class="mdl-cell mdl-cell--6-col">
+          <div id="chart1"></div>
+        </div>
+        <div class="mdl-cell mdl-cell--6-col">
+          <div id="chart2"></div>
+        </div>
+      </div>
+    </main>
+  </div>
 </body>
 <script>
   var URL_PREFIX = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series';
@@ -333,22 +371,22 @@
         datasets: [
           {
             label: 'Confirmed',
-            backgroundColor: 'rgb(255, 159, 64)',
-            borderColor: 'rgb(255, 159, 64)',
+            backgroundColor: '#FFA000',
+            borderColor: '#FFA000',
             data: chartData.get('confirmed').filter(country),
             fill: false,
           },
           {
             label: 'Deaths',
-            backgroundColor: 'rgb(255, 99, 132)',
-            borderColor: 'rgb(255, 99, 132)',
+            backgroundColor: '#D32F2F',
+            borderColor: '#D32F2F',
             data: chartData.get('deaths').filter(country),
             fill: false,
           },
           {
             label: 'Recovered',
-            backgroundColor: 'rgb(75, 192, 192)',
-            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: '#388E3C',
+            borderColor: '#388E3C',
             data: chartData.get('recovered').filter(country),
             fill: false,
           }
@@ -365,7 +403,7 @@
             }
           }],
           yAxes: [{
-            type: 'linear', // only linear but allow scale type registration. This allows extensions to exist solely for log scale for instance
+            type: document.getElementById('logscale').checked ? 'logarithmic' : 'linear',
             display: true,
             position: 'left',
             id: 'y-axis-1',
@@ -375,7 +413,7 @@
               labelString: '# Cases'
             }
           }, {
-            type: 'linear', // only linear but allow scale type registration. This allows extensions to exist solely for log scale for instance
+            type: document.getElementById('logscale').checked ? 'logarithmic' : 'linear',
             display: casesPerMillion >= 0.0,
             position: 'right',
             id: 'y-axis-2',
@@ -398,17 +436,20 @@
     });
   }
 
-  function drawGraph(initialCountry) {
+  function drawGraph(initialCountry, chart) {
     var canvas = document.createElement('canvas');
-
     var select = document.createElement('select');
-    document.body.appendChild(select);
     select.onchange = function () {
       draw(canvas, window.data, this.options[this.selectedIndex].value)
     };
 
-    document.getElementById('charts').appendChild(select);
-    document.getElementById('charts').appendChild(canvas);
+    var logscale = document.getElementById('logscale');
+    logscale.addEventListener('change', function () {
+      select.onchange(); // Fire an event to force draw().
+    });
+
+    chart.appendChild(select);
+    chart.appendChild(canvas);
 
     Array.from(window.data.values().next().value.countries).sort().map(country => {
       var el = document.createElement("option");
@@ -425,8 +466,8 @@
   Promise.all(Object.keys(URLS).map(function (label, index) { return fetchData(URL_PREFIX + '/' + URLS[label], label) }))
     .then(function (values) {
       window.data = new Map(values.map(v => [v.label, v]));
-      drawGraph('Switzerland');
-      drawGraph('Mainland China');
+      drawGraph('Switzerland', document.getElementById('chart1'));
+      drawGraph('Mainland China', document.getElementById('chart2'));
 
       // This is just for debugging. To keep the list of countries in sync. The one from the CSV files
       // and the one above that contains the total population per country.
