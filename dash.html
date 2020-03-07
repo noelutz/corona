@@ -363,7 +363,11 @@
     var casesPerMillion = COUNTRIES.has(country) ?
       chartData.get('confirmed').filter(country).reduce((a, b) => Math.max(a, b)) / (COUNTRIES.get(country)[0] / 1000) : -1.0;
 
-    var chart = new Chart(ctx, {
+    // Store a pointer to the Chart object in the canvas. That makes
+    // it easy to properly destroy the object before recreating other.
+    if (canvas.chart !== undefined) { canvas.chart.destroy(); }
+
+    canvas.chart = new Chart(ctx, {
       // The type of chart we want to create
       type: "line",
 
@@ -450,6 +454,7 @@
       select.onchange(); // Fire an event to force draw().
     });
 
+    while(chart.firstChild) chart.removeChild(chart.lastChild);
     chart.appendChild(select);
     chart.appendChild(canvas);
 
