@@ -74,7 +74,7 @@
   }
   var COUNTRIES = new Map([
     // Name, population 2019, density (pop/km2)
-    ["Mainland China", 1433783.686, 147.7068],
+    ["China", 1433783.686, 147.7068],
     ["India", 1366417.754, 415.629],
     ["US", 329064.917, 35.1092],
     ["Indonesia", 270625.568, 142.0928],
@@ -474,7 +474,7 @@
     .then(function (values) {
       window.data = new Map(values.map(v => [v.label, v]));
       drawGraph('Switzerland', document.getElementById('chart1'));
-      drawGraph('Mainland China', document.getElementById('chart2'));
+      drawGraph('China', document.getElementById('chart2'));
 
       // This is just for debugging. To keep the list of countries in sync. The one from the CSV files
       // and the one above that contains the total population per country.
