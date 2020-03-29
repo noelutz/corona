@@ -25,6 +25,12 @@
     .mdl-switch.is-checked .mdl-switch__track {
       background: #fbe2f0;
     }
+    .understand {
+      text-align: center;
+      font-size: 75%;
+      display: block;
+      text-indent: 45px;
+    }
   </style>
   </style>
 </head>
@@ -53,13 +59,13 @@
     </header>
     <main class="mdl-layout__content">
       <div class="mdl-grid">
-        <div class="mdl-cell mdl-cell--8-col">
+        <div class="mdl-cell mdl-cell--6-col">
           <div id="chart1"></div>
+          <a class="understand" href='https://www.youtube.com/watch?time_continue=2&v=54XLXg4fYsc&feature=emb_logo'>Understand this graph</a>
         </div>
-      </div>
-      <div class="mdl-grid">
-        <div class="mdl-cell mdl-cell--8-col">
+        <div class="mdl-cell mdl-cell--6-col">
           <div id="chart2"></div>
+          <a class="understand" href='https://www.youtube.com/watch?time_continue=2&v=54XLXg4fYsc&feature=emb_logo'>Understand this graph</a>
         </div>
       </div>
     </main>
@@ -74,7 +80,7 @@
   }
   var COUNTRIES = new Map([
     // Name, population 2019, density (pop/km2)
-    ["Mainland China", 1433783.686, 147.7068],
+    ["China", 1433783.686, 147.7068],
     ["India", 1366417.754, 415.629],
     ["US", 329064.917, 35.1092],
     ["Indonesia", 270625.568, 142.0928],
@@ -94,14 +100,14 @@
     ["Turkey", 83429.615, 106.4748],
     ["Iran", 82913.906, 50.3059],
     ["Thailand", 69625.582, 135.6906],
-    ["UK", 67530.172, 278.0164],
+    ["United Kingdom", 67530.172, 278.0164],
     ["France", 65129.728, 118.0539],
     ["Italy", 60550.075, 200.9387],
     ["South Africa", 58558.27, 47.9578],
     ["Tanzania", 58005.463, 61.3758],
     ["Myanmar", 54045.42, 79.8805],
     ["Kenya", 52573.973, 90.5875],
-    ["South Korea", 51225.308, 511.1796],
+    ["Korea, South", 51225.308, 511.1796],
     ["Colombia", 50339.443, 44.0898],
     ["Spain", 46736.776, 92.3666],
     ["Argentina", 44780.677, 16.1058],
@@ -337,6 +343,41 @@
           })
       }
     }
+    _movingAverage(data) {
+      var avg = [];
+      var sum = 0.0;
+      for (var i=0; i<6; ++i) {
+        sum += data[i];
+      }
+      for (var i=6; i<data.length; i++) {
+        sum += data[i];  // Add the current day.
+        if (i > 6) {
+          sum -= data[i - 7];  // Remove the day a week ago.
+        }
+        avg.push(sum / 7.0);
+      }
+      return avg;
+    }
+    _newCases(country) {
+      var data = this.filter(country);
+      var newCases = [];
+      for (var i=1; i<data.length; ++i) {
+        newCases.push(data[i] - data[i-1]);
+      }
+      return newCases;
+    }
+    casesTrajectory(country) {
+      // We won't have a datapoint for new cases for the first day in the dataset.
+      // On top of that, we won't have a weekly average for the following 6 days.
+      // Ergo, we need to skip the first 7 data points in the list of total cases.
+      var X = this.filter(country).slice(7);  // total cases confirmed
+      var Y = this._movingAverage(this._newCases(country));  // new confirmed cases (weekly average)
+      var data = [];
+      for (var i=0; i<X.length; ++i) {
+        data.push({x: X[i], y: Y[i]});
+      }
+      return data;
+    }
   }
 
   // Returns a promise with a ChartData.
@@ -354,6 +395,63 @@
         return new ChartData(header, data, label);
       });
   };
+
+  function drawTrajectory(canvas, chartData, country) {
+    var trajectory = chartData.get('confirmed').casesTrajectory(country);
+
+    // Store a pointer to the Chart object in the canvas. That makes
+    // it easy to properly destroy the object before recreating other.
+    if (canvas.chart !== undefined) { canvas.chart.destroy(); }
+
+    var ctx = canvas.getContext("2d");
+
+    canvas.chart = new Chart(ctx, {
+      // The type of chart we want to create
+      type: "line",
+
+      // The data for our dataset
+      data: {
+        datasets: [
+          {
+            label: 'New Cases Timeline',
+            backgroundColor: 'rgb(63,81,181)',
+            borderColor: 'rgb(63,81,181)',
+            data: trajectory,
+            fill: false,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          xAxes: [{
+            type: document.getElementById('logscale').checked ? 'logarithmic' : 'linear',
+            display: true,
+            scaleLabel: {
+              display: true,
+              labelString: 'Total Confirmed Cases'
+            }
+          }],
+          yAxes: [{
+            type: document.getElementById('logscale').checked ? 'logarithmic' : 'linear',
+            display: true,
+            ticks: {
+              beginAtZero: true,
+            },
+            scaleLabel: {
+              display: true,
+              labelString: 'New confirmed cases (weekly avg)'
+            },
+
+            // grid line settings
+            gridLines: {
+              drawOnChartArea: true, // only want the grid lines for one axis to show up
+            },
+          }]
+        }
+      }
+    });
+  }
 
   function draw(canvas, chartData, country) {
     gtag('event', 'graph', { 'event_category': 'draw', 'event_label': 'country', 'value': country });
@@ -444,9 +542,11 @@
 
   function drawGraph(initialCountry, chart) {
     var canvas = document.createElement('canvas');
+    var trajectoryCanvas = document.createElement('canvas');
     var select = document.createElement('select');
     select.onchange = function () {
       draw(canvas, window.data, this.options[this.selectedIndex].value)
+      drawTrajectory(trajectoryCanvas, window.data, this.options[this.selectedIndex].value);
     };
 
     var logscale = document.getElementById('logscale');
@@ -457,6 +557,7 @@
     while(chart.firstChild) chart.removeChild(chart.lastChild);
     chart.appendChild(select);
     chart.appendChild(canvas);
+    chart.appendChild(trajectoryCanvas);
 
     Array.from(window.data.values().next().value.countries).sort().map(country => {
       var el = document.createElement("option");
@@ -474,7 +575,7 @@
     .then(function (values) {
       window.data = new Map(values.map(v => [v.label, v]));
       drawGraph('Switzerland', document.getElementById('chart1'));
-      drawGraph('Mainland China', document.getElementById('chart2'));
+      drawGraph('China', document.getElementById('chart2'));
 
       // This is just for debugging. To keep the list of countries in sync. The one from the CSV files
       // and the one above that contains the total population per country.
