@@ -40,7 +40,7 @@
     <header class="mdl-layout__header">
       <div class="mdl-layout__header-row">
         <!-- Title -->
-        <span class="mdl-layout-title">Per Country COVID-19 Infection Timeseries</span>
+        <span class="mdl-layout-title">COVID-19 Infection Timeseries</span>
         <!-- Add spacer, to align navigation to the right -->
         <div class="mdl-layout-spacer"></div>
         <!-- Navigation -->
@@ -56,18 +56,30 @@
           </button> 
         </nav>
       </div>
+      <!-- Tabs -->
+      <div class="mdl-layout__tab-bar mdl-js-ripple-effect">
+        <a href="#fixed-tab-1" class="mdl-layout__tab is-active">Comparing Countries</a>
+        <a href="#fixed-tab-2" class="mdl-layout__tab">Comparing Swiss Cantons</a>
+      </div>
     </header>
     <main class="mdl-layout__content">
-      <div class="mdl-grid">
-        <div class="mdl-cell mdl-cell--6-col">
-          <div id="chart1"></div>
-          <a class="understand" href='https://www.youtube.com/watch?time_continue=2&v=54XLXg4fYsc&feature=emb_logo'>Understand this graph</a>
+      <section class="mdl-layout__tab-panel is-active" id="fixed-tab-1">
+        <div class="page-content">
+          <div class="mdl-grid">
+            <div class="mdl-cell mdl-cell--6-col">
+              <div id="chart1"></div>
+              <a class="understand" href='https://www.youtube.com/watch?time_continue=2&v=54XLXg4fYsc&feature=emb_logo'>Understand this graph</a>
+            </div>
+            <div class="mdl-cell mdl-cell--6-col">
+              <div id="chart2"></div>
+              <a class="understand" href='https://www.youtube.com/watch?time_continue=2&v=54XLXg4fYsc&feature=emb_logo'>Understand this graph</a>
+            </div>
+          </div>
         </div>
-        <div class="mdl-cell mdl-cell--6-col">
-          <div id="chart2"></div>
-          <a class="understand" href='https://www.youtube.com/watch?time_continue=2&v=54XLXg4fYsc&feature=emb_logo'>Understand this graph</a>
-        </div>
-      </div>
+      </section>
+      <section class="mdl-layout__tab-panel" id="fixed-tab-2">
+        <div class="page-content"><!-- Your content goes here --></div>
+      </section>
     </main>
   </div>
 </body>
@@ -135,7 +147,7 @@
     ["Ivory Coast", 25716.544, 79.7504],
     ["North Korea", 25666.161, 212.93],
     ["Australia", 25203.198, 3.2765],
-    ["Taiwan", 23773.876, 656.8639],
+    ["Taiwan*", 23773.876, 656.8639],
     ["Niger", 23310.715, 18.3984],
     ["Sri Lanka", 21323.733, 325.0074],
     ["Burkina Faso", 20321.378, 74.4463],
@@ -411,6 +423,7 @@
 
       // The data for our dataset
       data: {
+        labels: chartData.get('confirmed').labels.slice(7),
         datasets: [
           {
             label: 'New Cases Timeline',
@@ -448,7 +461,15 @@
               drawOnChartArea: true, // only want the grid lines for one axis to show up
             },
           }]
-        }
+        },
+        tooltips: {
+         callbacks: {
+            label: function(tooltipItem, data) {
+               var label = data.labels[tooltipItem.index];
+               return `${new Date(label).toISOString().substr(0, 10)}: ${Math.round(tooltipItem.yLabel)}`;
+            }
+         }
+      }
       }
     });
   }
@@ -458,8 +479,8 @@
 
     var ctx = canvas.getContext("2d");
 
-    var casesPerMillion = COUNTRIES.has(country) ?
-      chartData.get('confirmed').filter(country).reduce((a, b) => Math.max(a, b)) / (COUNTRIES.get(country)[0] / 1000) : -1.0;
+    var casesPer10k = COUNTRIES.has(country) ?
+      chartData.get('confirmed').filter(country).reduce((a, b) => Math.max(a, b)) / (COUNTRIES.get(country)[0] / 10) : -1.0;
 
     // Store a pointer to the Chart object in the canvas. That makes
     // it easy to properly destroy the object before recreating other.
@@ -518,16 +539,16 @@
             }
           }, {
             type: document.getElementById('logscale').checked ? 'logarithmic' : 'linear',
-            display: casesPerMillion >= 0.0,
+            display: casesPer10k >= 0.0,
             position: 'right',
             id: 'y-axis-2',
             ticks: {
               beginAtZero: true,
-              suggestedMax: casesPerMillion,
+              suggestedMax: casesPer10k,
             },
             scaleLabel: {
               display: true,
-              labelString: 'Cases per million inhabitants'
+              labelString: 'Cases per 10K inhabitants'
             },
 
             // grid line settings
