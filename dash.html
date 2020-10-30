@@ -411,6 +411,9 @@
   function drawTrajectory(canvas, chartData, country) {
     var trajectory = chartData.get('confirmed').casesTrajectory(country);
 
+    var casesPer10k = COUNTRIES.has(country) ?
+        (trajectory.reduce((a, b) => ((a.y > b.y) ? a : b)).y / (COUNTRIES.get(country)[0] / 10)) : -1.0;
+
     // Store a pointer to the Chart object in the canvas. That makes
     // it easy to properly destroy the object before recreating other.
     if (canvas.chart !== undefined) { canvas.chart.destroy(); }
@@ -447,6 +450,8 @@
           }],
           yAxes: [{
             type: document.getElementById('logscale').checked ? 'logarithmic' : 'linear',
+            position: 'left',
+            id: 'y-axis-1',
             display: true,
             ticks: {
               beginAtZero: true,
@@ -459,6 +464,24 @@
             // grid line settings
             gridLines: {
               drawOnChartArea: true, // only want the grid lines for one axis to show up
+            },
+          },{
+            type: document.getElementById('logscale').checked ? 'logarithmic' : 'linear',
+            display: casesPer10k >= 0.0,
+            position: 'right',
+            id: 'y-axis-2',
+            ticks: {
+              beginAtZero: true,
+              suggestedMax: casesPer10k,
+            },
+            scaleLabel: {
+              display: true,
+              labelString: 'Cases per 10K inhabitants'
+            },
+
+            // grid line settings
+            gridLines: {
+              drawOnChartArea: false, // only want the grid lines for one axis to show up
             },
           }]
         },
